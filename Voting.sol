@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 
 pragma solidity 0.8.17;
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 /** 
@@ -54,7 +54,7 @@ contract Voting is Ownable{
      * @param _newCampaignTitle refers to the chairpersonName given when the contract is initialized.
      * I made this part only for the test, it's not made for production.
      */
-    constructor(string memory _newCampaignTitle) {
+    constructor(string memory _newCampaignTitle) onlyOwner {
         chairpersonAddress = msg.sender;
         currentCampaignTitle = _newCampaignTitle;
         emit CampaignInitialized(string.concat("New campaign's initialization complete : ",_newCampaignTitle));
