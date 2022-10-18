@@ -64,9 +64,15 @@ VotesTallied
 }
 
 Votre smart contract doit définir un uint winningProposalId qui représente l’id du gagnant ou une fonction getWinner qui retourne le gagnant.
+
 Votre smart contract doit importer le smart contract la librairie “Ownable” d’OpenZepplin.
+
 Votre smart contract doit définir les événements suivants : 
+
 event VoterRegistered(address voterAddress); 
+
 event WorkflowStatusChange(WorkflowStatus previousStatus, WorkflowStatus newStatus);
+
 event ProposalRegistered(uint proposalId);
+
 event Voted (address voter, uint proposalId);
