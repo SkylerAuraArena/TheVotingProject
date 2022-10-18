@@ -189,36 +189,6 @@ contract Voting is Ownable{
         }
         _;
     }
-
-    /** 
-     * @dev Calls modifyWorkflowStatus() function anables the chairperson to change the campaign current workflow status.
-     * @param _newStatusCode index of workflowStatus in the WorkflowStatus enum.
-     * modifier onlyOwner form Openzeppelin's contract indicating the function is only usable with the contract creator's address.
-     */
-    function _modifyWorkflowStatus(uint8 _newStatusCode) internal {
-        WorkflowStatus previousState = currentWorkflowStatus;
-        if(_newStatusCode == 0){
-            currentWorkflowStatus = WorkflowStatus.RegisteringVoters;
-            emit WorkflowStatusChange(previousState, currentWorkflowStatus);
-        } else if(_newStatusCode == 1){
-            currentWorkflowStatus = WorkflowStatus.ProposalsRegistrationStarted;
-            emit WorkflowStatusChange(previousState, currentWorkflowStatus);
-        } else if(_newStatusCode == 2){
-            currentWorkflowStatus = WorkflowStatus.ProposalsRegistrationEnded;
-            emit WorkflowStatusChange(previousState, currentWorkflowStatus);
-        } else if(_newStatusCode == 3){
-            currentWorkflowStatus = WorkflowStatus.VotingSessionStarted;
-            emit WorkflowStatusChange(previousState, currentWorkflowStatus);
-        } else if(_newStatusCode == 4){
-            currentWorkflowStatus = WorkflowStatus.VotingSessionEnded;
-            emit WorkflowStatusChange(previousState, currentWorkflowStatus);
-        } else if(_newStatusCode == 5){
-            currentWorkflowStatus = WorkflowStatus.VotesTallied;
-            emit WorkflowStatusChange(previousState, currentWorkflowStatus);
-        } else {
-            revert("Invalid workflow status code.");
-        }
-    }
     
     /** 
      * @dev Calls closeCampaign() function anables the chairperson to close the current campaign.
@@ -266,6 +236,18 @@ contract Voting is Ownable{
     }
 
     /** 
+     * @dev Calls addVoter() function anables the chairperson to add a voter to the voters mapping.
+     * @param _addr to make an new voter linked to the address given.
+     * modifier onlyOwner from Openzeppelin's contract indicating the function is only usable with the contract creator's address.
+     */
+    function addVoter(address _addr) public onlyOwner canAddVotersOrOpenProposalsRegistration canAddThisNewVoter(_addr) {
+        Voter memory newVoter = Voter(true, false, 0);
+        voters[_addr] = newVoter;
+        votersAddresses.push(_addr);
+        emit VoterRegistered(_addr);
+    }
+
+    /** 
      * @dev Calls showCurrentWorkflowStatus() function show the campaign current workflow status.
      * @return a string indicating the new current campaign status.
      */
@@ -289,18 +271,6 @@ contract Voting is Ownable{
     }
 
     /** 
-     * @dev Calls addVoter() function anables the chairperson to add a voter to the voters mapping.
-     * @param _addr to make an new voter linked to the address given.
-     * modifier onlyOwner from Openzeppelin's contract indicating the function is only usable with the contract creator's address.
-     */
-    function addVoter(address _addr) public onlyOwner canAddVotersOrOpenProposalsRegistration canAddThisNewVoter(_addr) {
-        Voter memory newVoter = Voter(true, false, 0);
-        voters[_addr] = newVoter;
-        votersAddresses.push(_addr);
-        emit VoterRegistered(_addr);
-    }
-
-    /** 
      * @dev Calls getVotersList() function to get the whole registered voters addresses list.
      * @return votersList_ an coma separated list of all registered voters.
      */
@@ -321,14 +291,6 @@ contract Voting is Ownable{
     }
 
     /** 
-     * @dev Calls getProposalsList() function to get the whole proposals list.
-     * @return proposals an coma separated list of all registered proposals.
-     */
-    function getProposalsList() external view returns (Proposal[] memory) {
-        return proposals;
-    } 
-
-    /** 
      * @dev Calls vote() function anables registered voters to vote for their prefered proposal.
      * Only one vote per voter allowed.
      */
@@ -340,12 +302,86 @@ contract Voting is Ownable{
     }
 
     /** 
+     * @dev Calls getProposalsList() function to get the whole proposals list.
+     * @return proposals an coma separated list of all registered proposals.
+     */
+    function getProposalsList() external view returns (Proposal[] memory) {
+        return proposals;
+    } 
+
+    /** 
      * @dev Calls getVotersVotes() function to get the proposal id of a voter's vote.
      * @return a uint indicating the id of the choosen proposal according to the voter's address.
      */
     function getVotersVotes(address _voterAddress) external view isUserARegisteredVoter canVotesBeChecked isAddressAllowedToVote(_voterAddress) hasAddressVoted(_voterAddress) returns (uint) {
         return voters[_voterAddress].votedProposalId;
     }   
+
+    /** 
+     * @dev Calls getWinner() function to get the index of the winners contained in the proposals array and then
+     * @return winningProposalId the winner's id.
+     */
+    function getWinner() external view isThereAWinner returns (uint) {
+        return winningProposalId;
+    }
+
+    /** 
+     * @dev Calls getWinnerFullDetails() function to get the winning proposal details.
+     */
+    function getWinnerFullDetails() external view isThereAWinner returns (string memory) {
+        return string.concat("The id ",Strings.toString(winningProposalId)," (",proposals[winningProposalId].description,") won with ",Strings.toString(proposals[winningProposalId].voteCount)," votes.");
+    }
+
+    /** 
+     * @dev Calls showFirstVoterInfo() function is only used in development to check whether the voters mapping is reset or not (only for the first entry).
+     * It returns the first voters infos.
+     */
+    function showFirstVoterInfo() external view onlyOwner returns (bool,bool,uint) {
+        return(voters[votersAddresses[0]].isRegistered,voters[votersAddresses[0]].hasVoted,voters[votersAddresses[0]].votedProposalId);
+    }
+
+    /** 
+     * @dev Calls _resetCampaign() function reset both voters' addresses array and the voters' infos mapping.
+     */
+    function _resetCampaign() internal {
+        for (uint i = 0; i < votersAddresses.length; i++) {
+            // iterate over the voters' addresses array to iterate over the voters' mapping and reset all to value
+            voters[votersAddresses[i]].isRegistered = false;
+            voters[votersAddresses[i]].hasVoted = false;
+            voters[votersAddresses[i]].votedProposalId = 0;
+        }
+        delete proposals;
+    }
+
+    /** 
+     * @dev Calls modifyWorkflowStatus() function anables the chairperson to change the campaign current workflow status.
+     * @param _newStatusCode index of workflowStatus in the WorkflowStatus enum.
+     * modifier onlyOwner form Openzeppelin's contract indicating the function is only usable with the contract creator's address.
+     */
+    function _modifyWorkflowStatus(uint8 _newStatusCode) internal {
+        WorkflowStatus previousState = currentWorkflowStatus;
+        if(_newStatusCode == 0){
+            currentWorkflowStatus = WorkflowStatus.RegisteringVoters;
+            emit WorkflowStatusChange(previousState, currentWorkflowStatus);
+        } else if(_newStatusCode == 1){
+            currentWorkflowStatus = WorkflowStatus.ProposalsRegistrationStarted;
+            emit WorkflowStatusChange(previousState, currentWorkflowStatus);
+        } else if(_newStatusCode == 2){
+            currentWorkflowStatus = WorkflowStatus.ProposalsRegistrationEnded;
+            emit WorkflowStatusChange(previousState, currentWorkflowStatus);
+        } else if(_newStatusCode == 3){
+            currentWorkflowStatus = WorkflowStatus.VotingSessionStarted;
+            emit WorkflowStatusChange(previousState, currentWorkflowStatus);
+        } else if(_newStatusCode == 4){
+            currentWorkflowStatus = WorkflowStatus.VotingSessionEnded;
+            emit WorkflowStatusChange(previousState, currentWorkflowStatus);
+        } else if(_newStatusCode == 5){
+            currentWorkflowStatus = WorkflowStatus.VotesTallied;
+            emit WorkflowStatusChange(previousState, currentWorkflowStatus);
+        } else {
+            revert("Invalid workflow status code.");
+        }
+    }
 
     /** 
      * @dev Computes the winning proposal taking all previous votes into account.
@@ -378,41 +414,5 @@ contract Voting is Ownable{
         } else {
             emit NoWinnerElected("None of the proposals has been choosen as the winning one. The vote must start over again. Maybe, try new proposals.");
         }
-    }
-
-    /** 
-     * @dev Calls getWinner() function to get the index of the winners contained in the proposals array and then
-     * @return winningProposalId the winner's id.
-     */
-    function getWinner() external view isThereAWinner returns (uint) {
-        return winningProposalId;
-    }
-
-    /** 
-     * @dev Calls getWinnerFullDetails() function to get the winning proposal details.
-     */
-    function getWinnerFullDetails() external view isThereAWinner returns (string memory) {
-        return string.concat("The id ",Strings.toString(winningProposalId)," (",proposals[winningProposalId].description,") won with ",Strings.toString(proposals[winningProposalId].voteCount)," votes.");
-    }
-
-    /** 
-     * @dev Calls _resetCampaign() function reset both voters' addresses array and the voters' infos mapping.
-     */
-    function _resetCampaign() internal {
-        for (uint i = 0; i < votersAddresses.length; i++) {
-            // iterate over the voters' addresses array to iterate over the voters' mapping and reset all to value
-            voters[votersAddresses[i]].isRegistered = false;
-            voters[votersAddresses[i]].hasVoted = false;
-            voters[votersAddresses[i]].votedProposalId = 0;
-        }
-        delete proposals;
-    }
-
-    /** 
-     * @dev Calls showFirstVoterInfo() function is only used in development to check whether the voters mapping is reset or not (only for the first entry).
-     * It returns the first voters infos.
-     */
-    function showFirstVoterInfo() external view onlyOwner returns (bool,bool,uint) {
-        return(voters[votersAddresses[0]].isRegistered,voters[votersAddresses[0]].hasVoted,voters[votersAddresses[0]].votedProposalId);
     }
 }
