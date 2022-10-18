@@ -289,29 +289,6 @@ contract Voting is Ownable{
     }
 
     /** 
-     * @dev Calls registerVotersFromHCList() function anables the chairperson to set the voters mapping from an hard coded list.
-     * @dev This function is only made for the test, not meant to be used in production.
-     * modifier onlyOwner from Openzeppelin's contract indicating the function is only usable with the contract creator's address.
-     */    
-    function registerVotersFromHardCodedList() public onlyOwner canAddVotersOrOpenProposalsRegistration {
-        // Usually, the following list would have been passed as an argument to the function.
-        // However, for the test, I chose to submit it as an hard coded list.
-        address[15] memory votersAddressList = [0x5B38Da6a701c568545dCfcB03FcB875f56beddC4, 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2, 0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db, 
-        0x78731D3Ca6b7E34aC0F824c42a7cC18A495cabaB, 0x617F2E2fD72FD9D5503197092aC168c91465E7f2, 0x17F6AD8Ef982297579C203069C1DbfFE4348c372, 0x5c6B0f7Bf3E7ce046039Bd8FABdfD3f9F5021678,
-        0x03C6FcED478cBbC9a4FAB34eF9f40767739D1Ff7, 0x1aE0EA34a72D944a8C7603FfB3eC30a6669E454C, 0x0A098Eda01Ce92ff4A4CCb7A4fFFb5A43EBC70DC, 0xCA35b7d915458EF540aDe6068dFe2F44E8fa733c, 
-        0x14723A09ACff6D2A60DcdF7aA4AFf308FDDC160C, 0x4B0897b0513fdC7C541B6d9D7E929C4e5364D2dB, 0x583031D1113aD414F02576BD6afaBfb302140225, 0xdD870fA1b7C4700F2BD7f44238821C26f7392148
-        ];
-        for (uint i = 0; i < votersAddressList.length; i++) {
-            // First a temporary voter is created and initialized as an eligible voter who hasn't voted yet
-            // then this voter is appeneded to the voters map.
-            Voter memory newVoter = Voter(true, false, 0);
-            voters[votersAddressList[i]] = newVoter;
-            votersAddresses.push(votersAddressList[i]);
-        }
-        emit VoterRegisteredFromHardCodedList("The given voters list is now registered.");
-    }
-
-    /** 
      * @dev Calls addVoter() function anables the chairperson to add a voter to the voters mapping.
      * @param _addr to make an new voter linked to the address given.
      * modifier onlyOwner from Openzeppelin's contract indicating the function is only usable with the contract creator's address.
@@ -341,21 +318,6 @@ contract Voting is Ownable{
         Proposal memory newProposal = Proposal(_newProposalDescription,0);
         proposals.push(newProposal);
         emit ProposalRegistered(propId);
-    }
-
-    /** 
-     * @dev Calls registerProposalsFromHardCodedList() function set the proposals list from an hard coded list.
-     * @dev This function is only made for the test, not meant to be used in production.
-     */    
-    function registerProposalsFromHardCodedList() public onlyOwner canAddNewProposalsOrCloseProposalsRegistration isUserAllowedToVote {
-        string[5] memory newProposalsList = ["Prop 1", "Prop 2", "Prop 3", "Prop 4", "Prop 5"];
-        for (uint i = 0; i < newProposalsList.length; i++) {
-            // First a temporary proposal is created and initialized as an eligible proposal
-            // then this proposal is appeneded to the proposals list.
-            Proposal memory newProposal = Proposal(newProposalsList[i],0);
-            proposals.push(newProposal);
-        }
-        emit ProposalRegisteredFromHardCodedList("The given proposals list is now registered.");
     }
 
     /** 
